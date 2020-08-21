@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<head>
+  <title>zxing bug</title>
+  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
+</head>
+<body>
+	<div>
+    <p id="results"></p>
+	</div>
+
+	<div>
+		<h1> Upload a sample id card with pdf 417 barcode to scan:</h1>
+		<input type="file" id="uploadedIdPicture" name="uploadedIdPicture" />
+	</div>
+
+	<div id="fullscreen-capture" >
+		<h1>Live video stream:</h1>
+		<video id="captureStream"></video>
+	</div>
+
+
+</body>
+<script>
+  const codeReader = new ZXing.BrowserPDF417Reader();
+
+
+  const setResult = (result) => {
+    document.getElementById("results").innerHTML = result.getText();
+  }
+  const initiateStreamScanning = async () => {
+    const videoDevices = await codeReader.listVideoInputDevices()
+
+    if(!videoDevices.length || videoDevices[0].deviceId === undefined){
+      console.error("No video devices found.");
+    }
+
+    const stream = videoDevices[0];
+
+    try{
+      const result = await codeReader.decodeOnceFromVideoDevice(stream.deviceId, "captureStream")
+      setResult(result);
+    }catch(err){
+      console.error(err);
+    }
+  }
+
+  initiateStreamScanning();
+
+  document.getElementById('uploadedIdPicture').onchange = (e) => {
+    const uploadedFile = e.target.files[0];
+    const url = window.URL || window.webkitURL;
+
+    const image = new Image();
+
+    image.onload = async (e) => {
+      console.log("loaded");
+      try{
+        let result = await codeReader.decodeFromImage(image);
+        setResult(result);
+      }catch(err){
+        console.error(err);
+      }
+    };
+
+    image.onerror = function(e){
+      console.error(e);
+    };
+
+    image.src = url.createObjectURL(uploadedFile);
+  }
+</script>
+</html>
